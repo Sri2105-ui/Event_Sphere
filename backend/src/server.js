@@ -18,52 +18,52 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB before accepting requests
+await connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
-const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
-initSocket(server, clientOrigin);
-
-// Global Middleware: dynamic CORS for local development, Vercel deployments, and production
+// Explicit Origin Whitelist for CORS and WebSockets
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  'https://event-sphere-blush-alpha.vercel.app',
   'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5174',
   'http://localhost:3000'
-].filter(Boolean);
+];
 
+// Initialize Socket.IO with strict whitelist
+initSocket(server, allowedOrigins);
+
+// Global Middleware: Explicit CORS Whitelist
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, server-to-server)
-      if (!origin) return callback(null, true);
-
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.vercel.app') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')
-      ) {
-        return callback(null, true);
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
       }
-
-      // Allow production client
-      return callback(null, true);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 );
+
+// Preflight handler
+app.options('*', cors());
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health Check API
+// Health Check Endpoints
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'EventSphere API is running'
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'online',

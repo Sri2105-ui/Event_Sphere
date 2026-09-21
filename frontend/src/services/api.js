@@ -1,13 +1,17 @@
 import axios from 'axios';
 
-// Resolve base API URL dynamically (supports Vercel env variable & local Vite dev proxy)
-const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
-const baseURL = rawApiUrl.startsWith('http') && !rawApiUrl.endsWith('/api')
-  ? `${rawApiUrl.replace(/\/+$/, '')}/api`
-  : rawApiUrl;
+// Centralized API Configuration
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Base API endpoint for all Axios requests
+const rawUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+const baseURL = rawUrl
+  ? (rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`)
+  : '/api';
 
 const api = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }

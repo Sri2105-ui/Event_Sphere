@@ -14,6 +14,7 @@ export const getSocket = () => {
 
     socket = io(socketUrl, {
       autoConnect: false,
+      withCredentials: true,
       transports: ['websocket', 'polling']
     });
   }

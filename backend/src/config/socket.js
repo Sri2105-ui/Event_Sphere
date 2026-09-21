@@ -2,14 +2,25 @@ import { Server } from 'socket.io';
 
 let ioInstance = null;
 
-export const initSocket = (httpServer, allowedOrigin) => {
+const defaultAllowedOrigins = [
+  'https://event-sphere-blush-alpha.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+export const initSocket = (httpServer, origins = defaultAllowedOrigins) => {
+  const allowedList = Array.isArray(origins) ? origins : [origins];
   ioInstance = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        // Accept requests from Vercel domains, configured origin, or dev server
-        callback(null, true);
+        if (!origin || allowedList.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
       },
-      methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true
     }
   });

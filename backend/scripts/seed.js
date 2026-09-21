@@ -13,7 +13,7 @@ dotenv.config();
 
 const seedDatabase = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/eventsphere';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/eventsphere';
     await mongoose.connect(mongoUri);
     console.log(`Connected to database for seeding: ${mongoUri}`);
 

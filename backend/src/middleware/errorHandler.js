@@ -4,6 +4,14 @@ export const errorHandler = (err, req, res, next) => {
 
   console.error('[API Error]:', err);
 
+  // CORS Error
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      message: 'Not allowed by CORS'
+    });
+  }
+
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
     const message = `Resource not found with id of ${err.value}`;
@@ -12,14 +20,14 @@ export const errorHandler = (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+    const field = Object.keys(err.keyValue || {})[0] || 'field';
     const message = `Duplicate value entered for ${field}. Please use another value.`;
     return res.status(400).json({ success: false, message });
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map((val) => val.message).join(', ');
+    const message = Object.values(err.errors || {}).map((val) => val.message).join(', ');
     return res.status(400).json({ success: false, message });
   }
 
@@ -32,8 +40,11 @@ export const errorHandler = (err, req, res, next) => {
     return res.status(401).json({ success: false, message: 'Authentication token has expired' });
   }
 
-  res.status(error.statusCode || 500).json({
+  const statusCode = error.statusCode || 500;
+  res.status(statusCode).json({
     success: false,
-    message: error.message || 'Internal Server Error'
+    message: process.env.NODE_ENV === 'production' && statusCode === 500
+      ? 'Internal Server Error'
+      : (error.message || 'Internal Server Error')
   });
 };
