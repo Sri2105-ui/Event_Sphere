@@ -24,23 +24,36 @@ await connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// Explicit Origin Whitelist for CORS and WebSockets
+// Origin Whitelist for CORS and WebSockets
 const allowedOrigins = [
   'https://event-sphere-blush-alpha.vercel.app',
+  process.env.CLIENT_URL,
   'http://localhost:5173',
-  'http://localhost:3000'
-];
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+].filter(Boolean);
 
-// Initialize Socket.IO with strict whitelist
+// Initialize Socket.IO with whitelist
 initSocket(server, allowedOrigins);
 
-// Global Middleware: Explicit CORS Whitelist
+// Global Middleware: CORS Whitelist
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')
+      ) {
         callback(null, true);
       } else {
+        console.warn(`[CORS Blocked]: Origin "${origin}" is not allowed.`);
         callback(new Error('Not allowed by CORS'));
       }
     },

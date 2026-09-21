@@ -4,16 +4,27 @@ let ioInstance = null;
 
 const defaultAllowedOrigins = [
   'https://event-sphere-blush-alpha.vercel.app',
+  process.env.CLIENT_URL,
   'http://localhost:5173',
-  'http://localhost:3000'
-];
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+].filter(Boolean);
 
 export const initSocket = (httpServer, origins = defaultAllowedOrigins) => {
   const allowedList = Array.isArray(origins) ? origins : [origins];
   ioInstance = new Server(httpServer, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin || allowedList.includes(origin)) {
+        if (
+          !origin ||
+          allowedList.includes(origin) ||
+          origin.endsWith('.vercel.app') ||
+          origin.includes('localhost') ||
+          origin.includes('127.0.0.1')
+        ) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
