@@ -102,3 +102,13 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`[EventSphere Server]: Running in ${process.env.NODE_ENV || 'development'} mode on http://localhost:${PORT}`);
 });
+
+// In local development, also listen on port 5001 as a bridge for any existing clients or proxies
+if (process.env.NODE_ENV !== 'production' && Number(PORT) !== 5001) {
+  try {
+    const bridgeServer = http.createServer(app);
+    bridgeServer.listen(5001, () => {
+      console.log(`[EventSphere Bridge]: Also serving on http://localhost:5001`);
+    }).on('error', () => {});
+  } catch {}
+}

@@ -1,13 +1,25 @@
 import axios from 'axios';
 
-// Centralized API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Determine environment and backend URL with zero-config fallback
+const isBrowser = typeof window !== 'undefined';
+const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// Base API endpoint for all Axios requests
-const rawUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
-const baseURL = rawUrl
-  ? (rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`)
-  : '/api';
+// Resolve the backend API root URL
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) {
+    const raw = import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
+  }
+  // If deployed to Vercel or any cloud domain without VITE_API_URL set
+  if (isBrowser && !isLocalhost) {
+    return 'https://event-sphere-nnvq.onrender.com/api';
+  }
+  // Local development
+  return 'http://localhost:5000/api';
+};
+
+const baseURL = getApiBase();
+export const API_URL = baseURL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
   baseURL,
