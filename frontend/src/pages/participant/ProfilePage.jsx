@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { User, Mail, Phone, Building, Key, Shield, Save } from 'lucide-react';
 
 export const ProfilePage = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, switchRole } = useAuth();
   const { addToast } = useToast();
 
   const [name, setName] = useState(user?.name || '');
@@ -77,21 +77,69 @@ export const ProfilePage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Profile Card / Avatar Overview */}
-        <div className="md:col-span-1 p-6 rounded-3xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
-          <div className="relative w-24 h-24 mx-auto">
-            <img
-              src={avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'}
-              alt={user?.name}
-              className="w-24 h-24 rounded-full object-cover border-2 border-brand-500/40 p-1 bg-slate-950"
-            />
+        {/* Profile Card / Avatar Overview & Role Management */}
+        <div className="md:col-span-1 space-y-6">
+          <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 text-center space-y-4">
+            <div className="relative w-24 h-24 mx-auto">
+              <img
+                src={avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'}
+                alt={user?.name}
+                className="w-24 h-24 rounded-full object-cover border-2 border-brand-500/40 p-1 bg-slate-950"
+              />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-lg">{user?.name}</h3>
+              <p className="text-xs text-slate-400">{user?.email}</p>
+              <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-500/40">
+                {user?.role}
+              </span>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-white text-lg">{user?.name}</h3>
-            <p className="text-xs text-slate-400">{user?.email}</p>
-            <span className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-500/40">
-              {user?.role}
-            </span>
+
+          {/* Role Management Card */}
+          <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 text-left space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-400">
+              <Shield className="w-4 h-4" />
+              <span>Role & Permissions</span>
+            </div>
+            {user?.role === 'participant' ? (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You are registered as a <strong className="text-white">Student Participant</strong>. You can RSVP to events, claim digital tickets, and earn verified credentials.
+                </p>
+                <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-xs text-brand-300 space-y-2">
+                  <p className="font-medium">Want to host campus events & scan admissions?</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await switchRole('organizer');
+                    }}
+                    className="w-full py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <span>🎪 Upgrade to Club Organizer</span>
+                  </button>
+                </div>
+              </div>
+            ) : user?.role === 'organizer' ? (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You have <strong className="text-brand-300">Club Organizer</strong> privileges. You can publish events, manage registrations, scan QR passes, and issue certificates.
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await switchRole('participant');
+                  }}
+                  className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-all"
+                >
+                  Switch to Participant View
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-400">
+                You hold Administrator governance permissions.
+              </p>
+            )}
           </div>
         </div>
 

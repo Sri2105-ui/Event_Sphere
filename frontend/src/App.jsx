@@ -36,8 +36,59 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { EventApprovals } from './pages/admin/EventApprovals';
 import { AdminUsers } from './pages/admin/AdminUsers';
 
+const RoleAccessGuard = ({ requiredRole, currentRole, onUpgrade, onSwitchDemo, onBack }) => {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6 animate-in fade-in">
+      <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+        <span className="material-symbols-outlined text-[36px]">lock</span>
+      </div>
+      <div className="space-y-2">
+        <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500 dark:text-amber-400">
+          Access Restricted
+        </span>
+        <h2 className="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white">
+          {requiredRole === 'admin' ? 'Administrator Clearance Required' : 'Club Organizer Privileges Required'}
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          You are currently signed in with role <code className="px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-brand-600 dark:text-brand-400 font-bold font-mono">[{currentRole || 'guest'}]</code>.
+          This portal is reserved for {requiredRole === 'admin' ? 'Campus Senate administrators' : 'verified Club Organizers and Event Directors'}.
+        </p>
+      </div>
+
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl space-y-3 max-w-sm mx-auto text-left">
+        <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-center mb-1">
+          Quick Access Options
+        </h4>
+        {requiredRole === 'organizer' && onUpgrade && (
+          <button
+            onClick={onUpgrade}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-1.5"
+          >
+            <span>🎪 1-Click Upgrade to Organizer</span>
+          </button>
+        )}
+        <button
+          onClick={onSwitchDemo}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5"
+        >
+          <span>Switch to Demo {requiredRole === 'admin' ? 'Admin' : 'Organizer'}</span>
+        </button>
+        <button
+          onClick={onBack}
+          className="w-full py-1.5 text-center text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-medium"
+        >
+          Return to Student Hub
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const MainApp = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, switchRole, quickDemoLogin } = useAuth();
+  const isOrganizer = user && (user.role === 'organizer' || user.role === 'admin');
+  const isAdmin = user && user.role === 'admin';
+
   const [currentTab, setCurrentTab] = useState('home');
   const [activeEvent, setActiveEvent] = useState(null);
   const [editEventData, setEditEventData] = useState(null);
@@ -137,7 +188,19 @@ const MainApp = () => {
           {currentTab === 'profile' && <ProfilePage />}
 
           {/* Organizer Routes */}
-          {currentTab === 'organizer-dashboard' && (
+          {currentTab.startsWith('organizer-') && !isOrganizer && (
+            <RoleAccessGuard
+              requiredRole="organizer"
+              currentRole={user?.role}
+              onUpgrade={async () => {
+                await switchRole('organizer');
+              }}
+              onSwitchDemo={() => quickDemoLogin('organizer')}
+              onBack={() => handleSetTab('participant-dashboard')}
+            />
+          )}
+
+          {currentTab === 'organizer-dashboard' && isOrganizer && (
             <OrganizerDashboard
               setTab={handleSetTab}
               onSelectEvent={handleSelectEvent}
@@ -146,11 +209,11 @@ const MainApp = () => {
             />
           )}
 
-          {currentTab === 'organizer-create-event' && (
+          {currentTab === 'organizer-create-event' && isOrganizer && (
             <CreateEditEvent editEvent={editEventData} setTab={handleSetTab} />
           )}
 
-          {currentTab === 'organizer-attendees' && activeEvent && (
+          {currentTab === 'organizer-attendees' && isOrganizer && activeEvent && (
             <EventAttendees
               event={activeEvent}
               onBack={() => setCurrentTab('organizer-dashboard')}
@@ -158,7 +221,7 @@ const MainApp = () => {
             />
           )}
 
-          {currentTab === 'organizer-scanner' && (
+          {currentTab === 'organizer-scanner' && isOrganizer && (
             <div className="py-16 text-center space-y-4">
               <h2 className="text-2xl font-bold">QR Attendance Scanner Active</h2>
               <button
@@ -170,23 +233,32 @@ const MainApp = () => {
             </div>
           )}
 
-          {currentTab === 'organizer-analytics' && (
+          {currentTab === 'organizer-analytics' && isOrganizer && (
             <OrganizerAnalytics setTab={handleSetTab} />
           )}
 
-          {currentTab === 'organizer-notifications' && <NotificationsPage />}
+          {currentTab === 'organizer-notifications' && isOrganizer && <NotificationsPage />}
 
           {/* Admin Routes */}
-          {currentTab === 'admin-dashboard' && (
+          {currentTab.startsWith('admin-') && !isAdmin && (
+            <RoleAccessGuard
+              requiredRole="admin"
+              currentRole={user?.role}
+              onSwitchDemo={() => quickDemoLogin('admin')}
+              onBack={() => handleSetTab('home')}
+            />
+          )}
+
+          {currentTab === 'admin-dashboard' && isAdmin && (
             <AdminDashboard
               setTab={handleSetTab}
               onSelectEvent={handleSelectEvent}
             />
           )}
 
-          {currentTab === 'admin-approvals' && <EventApprovals setTab={handleSetTab} />}
+          {currentTab === 'admin-approvals' && isAdmin && <EventApprovals setTab={handleSetTab} />}
 
-          {currentTab === 'admin-users' && <AdminUsers setTab={handleSetTab} />}
+          {currentTab === 'admin-users' && isAdmin && <AdminUsers setTab={handleSetTab} />}
         </main>
       </div>
 

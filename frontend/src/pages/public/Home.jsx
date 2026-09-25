@@ -4,6 +4,7 @@ import { EventCard } from '../../components/EventCard';
 import { Tilt3D } from '../../components/Tilt3D';
 import { HologramSphere3D } from '../../components/HologramSphere3D';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Compass,
   Sparkles,
@@ -27,15 +28,41 @@ import {
   PlusCircle,
   Clock,
   Radio,
-  SlidersHorizontal
+  SlidersHorizontal,
+  X
 } from 'lucide-react';
 
 export const Home = ({ setTab, onSelectEvent }) => {
+  const { user, isAuthenticated, switchRole } = useAuth();
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showRoleUpgradeModal, setShowRoleUpgradeModal] = useState(false);
+  const [upgradingRole, setUpgradingRole] = useState(false);
   const { addToast } = useToast();
+
+  const handleHostEventClick = () => {
+    if (!isAuthenticated) {
+      setTab('login');
+      return;
+    }
+    if (user?.role === 'participant') {
+      setShowRoleUpgradeModal(true);
+    } else {
+      setTab('organizer-create-event');
+    }
+  };
+
+  const handleConfirmUpgrade = async () => {
+    setUpgradingRole(true);
+    const res = await switchRole('organizer');
+    setUpgradingRole(false);
+    if (res.success) {
+      setShowRoleUpgradeModal(false);
+      setTab('organizer-create-event');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -117,7 +144,7 @@ export const Home = ({ setTab, onSelectEvent }) => {
                   <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                 </button>
                 <button
-                  onClick={() => setTab('organizer-create-event')}
+                  onClick={handleHostEventClick}
                   className="h-12 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-surface-container-high dark:hover:bg-surface-bright border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-on-surface font-display text-sm font-semibold flex items-center justify-center gap-2 transition-all"
                   type="button"
                 >
@@ -583,6 +610,51 @@ export const Home = ({ setTab, onSelectEvent }) => {
           </div>
         </Tilt3D>
       </section>
+
+      {/* Role Upgrade Modal when Participant clicks Host an Event */}
+      {showRoleUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <button
+              onClick={() => setShowRoleUpgradeModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center border border-brand-500/30">
+              <span className="material-symbols-outlined text-[28px]">campaign</span>
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-display font-extrabold text-xl text-slate-900 dark:text-white">
+                Host an Event on Campus
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                You are currently signed in as a <strong className="text-slate-900 dark:text-white">Student Participant</strong> (<code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 font-bold">participant</code>).
+                To publish events and manage attendees, upgrade your account to <strong className="text-brand-600 dark:text-brand-400">Club Organizer</strong> with 1 click.
+              </p>
+            </div>
+
+            <div className="pt-2 space-y-2">
+              <button
+                type="button"
+                disabled={upgradingRole}
+                onClick={handleConfirmUpgrade}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                {upgradingRole ? 'Upgrading Role...' : 'Upgrade to Organizer & Host Event'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRoleUpgradeModal(false)}
+                className="w-full py-2 text-center text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+              >
+                Keep Student Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

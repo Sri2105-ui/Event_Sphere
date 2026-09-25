@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import {
   QrCode,
   X,
@@ -15,6 +16,9 @@ import {
 } from 'lucide-react';
 
 export const AttendanceScannerModal = ({ events = [], activeEventId, onClose }) => {
+  const { user, switchRole, quickDemoLogin } = useAuth();
+  const isOrganizer = user && (user.role === 'organizer' || user.role === 'admin');
+
   const [selectedEventId, setSelectedEventId] = useState(activeEventId || (events[0]?._id || ''));
   const [manualCode, setManualCode] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -131,6 +135,46 @@ export const AttendanceScannerModal = ({ events = [], activeEventId, onClose }) 
         </div>
 
         {/* Content Body */}
+        {!isOrganizer ? (
+          <div className="p-8 text-center space-y-5 bg-gradient-to-b from-slate-900 to-slate-950">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+              <span className="material-symbols-outlined text-[32px]">admin_panel_settings</span>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-display font-bold text-white text-lg">
+                Organizer Permissions Required
+              </h4>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                You are currently signed in as a <strong className="text-white">Student Participant</strong> ({user?.role || 'participant'}). Only verified Club Organizers or Admins can scan attendee QR passes.
+              </p>
+            </div>
+            <div className="space-y-2 max-w-xs mx-auto">
+              <button
+                type="button"
+                onClick={async () => {
+                  await switchRole('organizer');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg transition-all"
+              >
+                🎪 Upgrade Account to Organizer
+              </button>
+              <button
+                type="button"
+                onClick={() => quickDemoLogin('organizer')}
+                className="w-full py-2 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all"
+              >
+                Switch to Demo Organizer Account
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-1 text-center text-xs text-slate-500 hover:text-slate-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="p-6 space-y-5 bg-gradient-to-b from-slate-900 to-slate-950">
           {/* Event Selector */}
           {events.length > 0 && (
@@ -288,6 +332,7 @@ export const AttendanceScannerModal = ({ events = [], activeEventId, onClose }) 
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

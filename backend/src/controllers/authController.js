@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 
 // Helper to generate JWT token
-const generateToken = (id) => {
+const generateToken = (id, role) => {
   return jwt.sign(
-    { id },
+    { id, role },
     process.env.JWT_SECRET || 'eventsphere_super_secret_jwt_key_2026_modern_secure',
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -38,7 +38,7 @@ export const register = async (req, res, next) => {
       isApprovedOrganizer: true // immediate trial access
     });
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
     res.status(201).json({
       success: true,
@@ -95,7 +95,7 @@ export const login = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
 
     res.status(200).json({
       success: true,
@@ -197,6 +197,52 @@ export const changePassword = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Password updated successfully!'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Switch user role (e.g. participant -> organizer)
+// @route PUT /api/auth/switch-role
+export const switchRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    if (!['participant', 'organizer'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role request. Only participant or organizer can be selected.'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.role = role;
+    if (role === 'organizer') {
+      user.isApprovedOrganizer = true;
+    }
+    await user.save();
+
+    const token = generateToken(user._id, user.role);
+
+    res.status(200).json({
+      success: true,
+      message: `Role successfully switched to ${role}!`,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        organization: user.organization,
+        phone: user.phone,
+        bio: user.bio,
+        isApprovedOrganizer: user.isApprovedOrganizer
+      }
     });
   } catch (error) {
     next(error);

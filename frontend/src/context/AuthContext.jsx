@@ -95,6 +95,26 @@ export const AuthProvider = ({ children }) => {
     return await login(target.email, target.pass);
   };
 
+  const switchRole = async (targetRole) => {
+    try {
+      const res = await api.put('/auth/switch-role', { role: targetRole });
+      if (res.data.success) {
+        if (res.data.token) {
+          setToken(res.data.token);
+          localStorage.setItem('eventsphere_token', res.data.token);
+        }
+        setUser(res.data.user);
+        localStorage.setItem('eventsphere_user', JSON.stringify(res.data.user));
+        addToast(res.data.message || `Switched role to ${targetRole}!`, 'success');
+        return { success: true, user: res.data.user };
+      }
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Failed to switch role.';
+      addToast(msg, 'error');
+      return { success: false, message: msg };
+    }
+  };
+
   const updateUser = (updated) => {
     setUser((prev) => {
       const merged = { ...prev, ...updated };
@@ -114,6 +134,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         quickDemoLogin,
+        switchRole,
         updateUser
       }}
     >

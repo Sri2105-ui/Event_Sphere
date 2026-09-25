@@ -39,7 +39,26 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    // Stale authentication check:
+    // If the JWT contains a role that doesn't match the current database role,
+    // require the user to obtain a fresh token rather than trusting an outdated role.
+    if (decoded.role && decoded.role !== user.role) {
+      console.warn(
+        `[Auth Stale Role] User ID: ${user._id} presented token with role [${decoded.role}] but MongoDB role is [${user.role}]. Rejecting stale token.`
+      );
+      return res.status(401).json({
+        success: false,
+        message: 'Your account role has changed since your last login. Please log in again to refresh your session.'
+      });
+    }
+
     req.user = user;
+
+    // Safe debugging log
+    console.log(
+      `[Auth Protect] User ID: ${user._id} | User Role: ${user.role} | Method: ${req.method} | Route: ${req.originalUrl || req.baseUrl + req.path}`
+    );
+
     next();
   } catch (error) {
     return res.status(401).json({
