@@ -6,15 +6,20 @@ const isLocalhost = isBrowser && (window.location.hostname === 'localhost' || wi
 
 // Resolve the backend API root URL
 const getApiBase = () => {
-  if (import.meta.env.VITE_API_URL) {
-    const raw = import.meta.env.VITE_API_URL.replace(/\/+$/, '');
-    return raw.endsWith('/api') ? raw : `${raw}/api`;
+  const envUrl = import.meta.env.VITE_API_URL;
+  // If envUrl is provided and we are on localhost, or envUrl is a remote URL
+  if (envUrl) {
+    const isEnvLocalhost = envUrl.includes('localhost') || envUrl.includes('127.0.0.1');
+    if (isLocalhost || !isEnvLocalhost) {
+      const raw = envUrl.replace(/\/+$/, '');
+      return raw.endsWith('/api') ? raw : `${raw}/api`;
+    }
   }
   // If deployed to Vercel or any cloud domain without VITE_API_URL set
   if (isBrowser && !isLocalhost) {
     return 'https://event-sphere-nnvq.onrender.com/api';
   }
-  // Local development
+  // Local development fallback
   return 'http://localhost:5000/api';
 };
 

@@ -7,7 +7,8 @@ import {
   deleteEvent,
   getMyEvents,
   joinWaitlist,
-  leaveWaitlist
+  leaveWaitlist,
+  seedEvents
 } from '../controllers/eventController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
 import { authorize } from '../middleware/roleAuth.js';
@@ -16,6 +17,7 @@ import { upload, processImage } from '../middleware/upload.js';
 const router = express.Router();
 
 router.get('/', optionalAuth, getEvents);
+router.post('/seed', optionalAuth, seedEvents);
 router.get('/organizer/my-events', protect, authorize('organizer', 'admin'), getMyEvents);
 router.get('/:slugOrId', optionalAuth, getEventDetails);
 

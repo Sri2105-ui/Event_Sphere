@@ -3,6 +3,7 @@ import { Category } from '../models/Category.js';
 import { Registration } from '../models/Registration.js';
 import { Notification } from '../models/Notification.js';
 import { emitToAll, emitToUser } from '../config/socket.js';
+import { autoSeedIfEmpty, seedDatabase } from '../services/seedService.js';
 
 // Helper to generate unique slug
 const createUniqueSlug = async (title) => {
@@ -28,6 +29,11 @@ const createUniqueSlug = async (title) => {
 // @route GET /api/events
 export const getEvents = async (req, res, next) => {
   try {
+    // If the database has 0 events, auto-seed defaults so users immediately see events
+    const currentTotal = await Event.countDocuments();
+    if (currentTotal === 0) {
+      await autoSeedIfEmpty();
+    }
     const {
       keyword,
       category,
@@ -426,6 +432,22 @@ export const leaveWaitlist = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'You have left the waitlist.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc Seed sample campus events
+// @route POST /api/events/seed
+export const seedEvents = async (req, res, next) => {
+  try {
+    const force = req.query.force === 'true' && req.user && req.user.role === 'admin';
+    const result = await seedDatabase({ force });
+    res.status(200).json({
+      success: true,
+      message: 'Sample campus events seeded successfully',
+      ...result
     });
   } catch (error) {
     next(error);

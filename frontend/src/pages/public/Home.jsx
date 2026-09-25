@@ -72,7 +72,21 @@ export const Home = ({ setTab, onSelectEvent }) => {
           api.get('/categories')
         ]);
         if (eventsRes.data.success) {
-          setFeaturedEvents(eventsRes.data.events);
+          if (eventsRes.data.events && eventsRes.data.events.length > 0) {
+            setFeaturedEvents(eventsRes.data.events);
+          } else {
+            // Fallback: If no featured events, fetch general published events
+            try {
+              const fallbackRes = await api.get('/events?limit=6');
+              if (fallbackRes.data.success && fallbackRes.data.events?.length > 0) {
+                setFeaturedEvents(fallbackRes.data.events);
+              } else {
+                setFeaturedEvents([]);
+              }
+            } catch {
+              setFeaturedEvents([]);
+            }
+          }
         }
         if (catsRes.data.success) {
           setCategories(catsRes.data.categories);
@@ -458,6 +472,30 @@ export const Home = ({ setTab, onSelectEvent }) => {
             {[1, 2, 3].map((n) => (
               <div key={n} className="h-80 rounded-3xl bg-slate-100 dark:bg-slate-900/50 animate-pulse border border-slate-200 dark:border-slate-800" />
             ))}
+          </div>
+        ) : featuredEvents.length === 0 ? (
+          <div className="text-center py-12 px-6 rounded-3xl bg-slate-100/70 dark:bg-surface-container border border-dashed border-slate-300 dark:border-slate-800 space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <h3 className="font-display font-bold text-lg text-slate-900 dark:text-on-surface">No Campus Events Scheduled Yet</h3>
+            <p className="text-xs text-slate-500 dark:text-on-surface-variant max-w-md mx-auto">
+              Browse the catalog for upcoming departmental fests, workshops, and hackathons, or host a new event!
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setTab('explore')}
+                className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 transition-all shadow-md"
+              >
+                Browse All Events
+              </button>
+              <button
+                onClick={handleHostEventClick}
+                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              >
+                Host an Event
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
